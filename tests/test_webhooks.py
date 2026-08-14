@@ -35,3 +35,9 @@ def test_verify_signature_empty_inputs() -> None:
     assert verify_signature("", b"{}", "sha256=abc") is False
     assert verify_signature("whsec_x", b"{}", "") is False
     assert verify_signature("whsec_x", "not-bytes", "sha256=abc") is False  # type: ignore[arg-type]
+
+
+def test_verify_signature_none_body_same_as_empty() -> None:
+    secret = "whsec_test_secret"
+    assert verify_signature(secret, None, _sign(secret, b"")) is True
+    assert verify_signature(secret, b"", _sign(secret, b"")) is True

@@ -18,7 +18,8 @@ from praxicraft import (
 def client(httpx_mock) -> Client:
     # httpx_mock is unused here but ensures pytest-httpx is loaded for siblings
     _ = httpx_mock
-    return Client(api_key="ct_live_test", base_url="https://assess.example.com")
+    # Disable retries so single-response error mocks stay deterministic.
+    return Client(api_key="ct_live_test", base_url="https://assess.example.com", max_retries=0)
 
 
 def test_missing_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

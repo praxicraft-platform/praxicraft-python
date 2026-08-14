@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from praxicraft._paths import path_segment
+from praxicraft.types import Enrollment, Page, Pipeline
 
 if TYPE_CHECKING:
     from praxicraft._client import Client
@@ -14,11 +15,11 @@ class PipelinesResource:
     def __init__(self, client: Client) -> None:
         self._client = client
 
-    def list(self, *, params: Mapping[str, Any] | None = None) -> Any:
+    def list(self, *, params: Mapping[str, Any] | None = None) -> Page:
         """``GET /pipelines/`` — list hiring pipelines."""
         return self._client.get("/pipelines/", params=params)
 
-    def retrieve(self, pipeline: str) -> Any:
+    def retrieve(self, pipeline: str) -> Pipeline:
         """``GET /pipelines/{slug}/`` — pipeline detail + stages."""
         key = path_segment(pipeline, label="pipeline")
         return self._client.get(f"/pipelines/{key}/")
@@ -31,7 +32,7 @@ class PipelinesResource:
         name: str | None = None,
         send_email: bool | None = None,
         **extra: Any,
-    ) -> Any:
+    ) -> Enrollment:
         """``POST /pipelines/{slug}/enroll/`` — enroll one candidate.
 
         Idempotent on email for the same pipeline.

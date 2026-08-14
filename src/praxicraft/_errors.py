@@ -138,9 +138,6 @@ def raise_for_status(
 
 
 def _parse_retry_after(value: str | None) -> float | None:
-    if value is None:
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    from praxicraft._retry import parse_retry_after_seconds
+
+    return parse_retry_after_seconds(value)

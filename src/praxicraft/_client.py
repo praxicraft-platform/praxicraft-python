@@ -7,7 +7,18 @@ from typing import Any, Mapping
 
 import httpx
 
-from praxicraft._errors import APIConnectionError, APIError, raise_for_status
+from praxicraft._errors import (
+    APIConnectionError,
+    APIError,
+    APIStatusError,
+    raise_for_status,
+)
+from praxicraft._retry import (
+    DEFAULT_MAX_RETRIES,
+    retry_delay_seconds,
+    should_retry_status,
+    sleep_fn,
+)
 from praxicraft.resources.assessments import AssessmentsResource
 from praxicraft.resources.invites import InvitesResource
 from praxicraft.resources.org import OrgResource
@@ -29,6 +40,10 @@ class Client:
 
     Optional ``base_url`` / ``PRAXICRAFT_API_BASE_URL`` override the host
     (default ``https://assess.praxicraft.com``).
+
+    Transient ``429`` / ``5xx`` / transport failures are retried up to
+    ``max_retries`` times (default 2 → 3 total attempts), honouring
+    ``Retry-After`` when present.
     """
 
     def __init__(
@@ -37,6 +52,7 @@ class Client:
         *,
         base_url: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
+        max_retries: int = DEFAULT_MAX_RETRIES,
         http_client: httpx.Client | None = None,
     ) -> None:
         resolved_key = (api_key if api_key is not None else os.environ.get("PRAXICRAFT_API_KEY")) or ""
@@ -59,6 +75,7 @@ class Client:
         self.base_url = resolved_base
         self.api_prefix = DEFAULT_API_PREFIX
         self.timeout = timeout
+        self.max_retries = max(0, int(max_retries))
         self._owns_client = http_client is None
         self._http = http_client or httpx.Client(
             base_url=self.base_url,
@@ -101,13 +118,54 @@ class Client:
         Empty 204 bodies return ``None``.
         """
         url_path = self._normalize_path(path)
-        request_headers = {
-            "Authorization": f"Bearer {self.api_key}",
+        attempts = self.max_retries + 1
+        last_exc: BaseException | None = None
+
+        for attempt in range(attempts):
+            if attempt > 0:
+                retry_after = None
+                if isinstance(last_exc, APIStatusError):
+                    retry_after = last_exc.headers.get("retry-after")
+                sleep_fn(retry_delay_seconds(attempt - 1, retry_after))
+
+            try:
+                return self._request_once(
+                    method,
+                    url_path,
+                    params=params,
+                    json=json,
+                    headers=headers,
+                )
+            except APIConnectionError as exc:
+                last_exc = exc
+                if attempt >= attempts - 1:
+                    raise
+            except APIStatusError as exc:
+                last_exc = exc
+                if should_retry_status(exc.status_code) and attempt < attempts - 1:
+                    continue
+                raise
+
+        assert last_exc is not None
+        raise last_exc
+
+    def _request_once(
+        self,
+        method: str,
+        url_path: str,
+        *,
+        params: Mapping[str, Any] | None,
+        json: Any | None,
+        headers: Mapping[str, str] | None,
+    ) -> Any:
+        # Custom headers first; auth / UA are forced so callers cannot strip them.
+        request_headers: dict[str, str] = {
             "Accept": "application/json",
-            "User-Agent": USER_AGENT,
         }
         if headers:
-            request_headers.update(headers)
+            request_headers.update(dict(headers))
+        request_headers["Authorization"] = f"Bearer {self.api_key}"
+        request_headers["User-Agent"] = USER_AGENT
         if json is not None:
             request_headers.setdefault("Content-Type", "application/json")
 
@@ -130,7 +188,6 @@ class Client:
             return None
 
         body: Any
-        raw_text = ""
         if not response.content:
             body = None
         else:
@@ -143,7 +200,6 @@ class Client:
                         f"Invalid JSON response (HTTP {response.status_code}).",
                         code="INVALID_JSON",
                     )
-                # Proxies / gateways may return HTML on 5xx — still raise typed status errors.
                 body = raw_text
 
         if response.is_success:
@@ -200,8 +256,6 @@ class Client:
             return path
         if not path.startswith("/"):
             path = f"/{path}"
-        # When a custom httpx.Client is injected (possibly without base_url),
-        # prefer absolute URLs against this Client.base_url.
         if path.startswith(self.api_prefix):
             relative = path
         else:
@@ -219,7 +273,6 @@ def _clean_params(params: Mapping[str, Any] | None) -> dict[str, Any] | None:
     for key, value in params.items():
         if value is None:
             continue
-        # httpx rejects bare bool/list inconsistently across versions; stringify bools.
         if isinstance(value, bool):
             cleaned[key] = "true" if value else "false"
         else:

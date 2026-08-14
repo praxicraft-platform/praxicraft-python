@@ -10,6 +10,22 @@ pip install praxicraft
 
 **Requires Python 3.10+.** Full API reference: [docs.praxicraft.com](https://docs.praxicraft.com)
 
+## Table of Contents
+
+- [Authentication](#authentication)
+- [Quickstart](#quickstart)
+- [What you can do](#what-you-can-do)
+  - [Check invite quota before bulk sends](#check-invite-quota-before-bulk-sends)
+  - [Bulk invites](#bulk-invites)
+  - [Build and activate an assessment via API](#build-and-activate-an-assessment-via-api)
+  - [Register and test a webhook](#register-and-test-a-webhook)
+  - [Enroll into a hiring pipeline](#enroll-into-a-hiring-pipeline)
+  - [Paginate cohort results](#paginate-cohort-results)
+  - [Verify webhook signatures](#verify-webhook-signatures)
+- [Errors](#errors)
+- [Requirements & support](#requirements--support)
+- [License](#license)
+
 ---
 
 ## Authentication

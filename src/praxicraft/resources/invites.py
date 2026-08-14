@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from praxicraft._paths import path_segment
+from praxicraft.types import Invite, Page
 
 if TYPE_CHECKING:
     from praxicraft._client import Client
@@ -14,11 +15,11 @@ class InvitesResource:
     def __init__(self, client: Client) -> None:
         self._client = client
 
-    def list(self, *, params: Mapping[str, Any] | None = None) -> Any:
+    def list(self, *, params: Mapping[str, Any] | None = None) -> Page:
         """``GET /invites/`` — list invitations for the organisation."""
         return self._client.get("/invites/", params=params)
 
-    def retrieve(self, invite_token: str) -> Any:
+    def retrieve(self, invite_token: str) -> Invite:
         """``GET /invites/{token}/`` — invitation status."""
         token = path_segment(invite_token, label="invite_token")
         return self._client.get(f"/invites/{token}/")
@@ -33,7 +34,7 @@ class InvitesResource:
         expires_days: int | None = None,
         send_email: bool | None = None,
         **extra: Any,
-    ) -> Any:
+    ) -> Invite:
         """``POST /assessments/{slug}/invites/`` — invite one candidate.
 
         Idempotent on email: a repeat call returns the existing invitation.
