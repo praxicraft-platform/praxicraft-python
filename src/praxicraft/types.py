@@ -6,7 +6,7 @@ plain dicts (JSON), but type checkers catch field misuse.
 
 from __future__ import annotations
 
-from typing import Any, NotRequired, TypedDict
+from typing import Any, TypedDict
 
 
 class Org(TypedDict, total=False):
@@ -69,8 +69,9 @@ class Enrollment(TypedDict, total=False):
 
 
 class Page(TypedDict, total=False):
+    # total=False makes every key optional (Python 3.10-safe; no NotRequired).
     results: list[Any]
-    next: NotRequired[str | None]
-    previous: NotRequired[str | None]
-    next_cursor: NotRequired[str | None]
-    count: NotRequired[int]
+    next: str | None
+    previous: str | None
+    next_cursor: str | None
+    count: int
