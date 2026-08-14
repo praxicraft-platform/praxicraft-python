@@ -87,7 +87,10 @@ class AssessmentsResource:
     def remove_case(self, assessment: str, *, assessment_case_id: str) -> Any:
         """``DELETE /assessments/{slug}/cases/remove/`` — detach one case row."""
         key = path_segment(assessment, label="assessment")
-        case_id = path_segment(assessment_case_id, label="assessment_case_id")
+        # Body IDs must stay raw (not URL-encoded); only path segments are encoded.
+        case_id = str(assessment_case_id).strip()
+        if not case_id:
+            raise ValueError("assessment_case_id must be a non-empty string")
         return self._client.delete(
             f"/assessments/{key}/cases/remove/",
             json={"assessment_case_id": case_id},

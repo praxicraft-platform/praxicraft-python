@@ -58,10 +58,10 @@ invite = client.invites.create(
     name="Jane Doe",
     send_email=True,
 )
-print(invite["token"], invite.get("invite_url"))
+print(invite["invite_token"], invite.get("invite_url"))
 
 # Fetch that candidate's result
-result = client.results.retrieve(invite_token=invite["token"])
+result = client.results.retrieve(invite_token=invite["invite_token"])
 print(result)
 ```
 

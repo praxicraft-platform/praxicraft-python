@@ -12,7 +12,7 @@ def test_create_invite(httpx_mock) -> None:
         url="https://assess.example.com/api/v1/public/assessments/demo/invites/",
         status_code=201,
         json={
-            "token": "11111111-1111-1111-1111-111111111111",
+            "invite_token": "11111111-1111-1111-1111-111111111111",
             "email": "jane@example.com",
             "status": "pending",
         },
@@ -28,6 +28,7 @@ def test_create_invite(httpx_mock) -> None:
         name="Jane Doe",
         send_email=True,
     )
+    assert data["invite_token"].startswith("11111111")
     assert data["status"] == "pending"
 
 
@@ -38,13 +39,14 @@ def test_create_invite_idempotent_200(httpx_mock) -> None:
         url="https://assess.example.com/api/v1/public/assessments/demo/invites/",
         status_code=200,
         json={
-            "token": "11111111-1111-1111-1111-111111111111",
+            "invite_token": "11111111-1111-1111-1111-111111111111",
             "email": "jane@example.com",
             "status": "pending",
         },
     )
     data = client.invites.create("demo", email="jane@example.com")
     assert data["email"] == "jane@example.com"
+    assert "invite_token" in data
 
 
 def test_bulk_create(httpx_mock) -> None:
@@ -73,7 +75,7 @@ def test_list_and_retrieve_and_cancel(httpx_mock) -> None:
     httpx_mock.add_response(
         method="GET",
         url="https://assess.example.com/api/v1/public/invites/",
-        json={"results": [{"token": token}]},
+        json={"results": [{"invite_token": token}]},
     )
     httpx_mock.add_response(
         method="GET",
@@ -86,7 +88,7 @@ def test_list_and_retrieve_and_cancel(httpx_mock) -> None:
         status_code=204,
     )
 
-    assert client.invites.list()["results"][0]["token"] == token
+    assert client.invites.list()["results"][0]["invite_token"] == token
     assert client.invites.retrieve(token)["status"] == "pending"
     assert client.invites.cancel(token) is None
 
