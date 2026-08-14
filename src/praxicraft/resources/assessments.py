@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from praxicraft._paths import path_segment
+from praxicraft.types import Assessment, Page
 
 if TYPE_CHECKING:
     from praxicraft._client import Client
@@ -14,23 +15,23 @@ class AssessmentsResource:
     def __init__(self, client: Client) -> None:
         self._client = client
 
-    def list(self, *, params: Mapping[str, Any] | None = None) -> Any:
+    def list(self, *, params: Mapping[str, Any] | None = None) -> Page:
         """``GET /assessments/`` — list assessments for the organisation."""
         return self._client.get("/assessments/", params=params)
 
-    def retrieve(self, assessment: str) -> Any:
+    def retrieve(self, assessment: str) -> Assessment:
         """``GET /assessments/{slug_or_id}/`` — fetch one assessment."""
         key = path_segment(assessment, label="assessment")
         return self._client.get(f"/assessments/{key}/")
 
-    def create(self, **fields: Any) -> Any:
+    def create(self, **fields: Any) -> Assessment:
         """``POST /assessments/create/`` — create a draft assessment.
 
         Pass Public API body fields as keyword arguments (e.g. ``title=...``).
         """
         return self._client.post("/assessments/create/", json=fields)
 
-    def update(self, assessment: str, **fields: Any) -> Any:
+    def update(self, assessment: str, **fields: Any) -> Assessment:
         """``PATCH /assessments/{slug}/update/`` — patch config / status.
 
         Example activate: ``client.assessments.update(slug, status="active")``.
@@ -40,7 +41,7 @@ class AssessmentsResource:
         key = path_segment(assessment, label="assessment")
         return self._client.patch(f"/assessments/{key}/update/", json=fields)
 
-    def activate(self, assessment: str) -> Any:
+    def activate(self, assessment: str) -> Assessment:
         """Activate an assessment (``status="active"``) so it can accept invites."""
         return self.update(assessment, status="active")
 

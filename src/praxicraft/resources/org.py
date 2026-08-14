@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Mapping
 
+from praxicraft.types import Org
+
 if TYPE_CHECKING:
     from praxicraft._client import Client
 
@@ -12,7 +14,7 @@ class OrgResource:
     def __init__(self, client: Client) -> None:
         self._client = client
 
-    def retrieve(self) -> Any:
+    def retrieve(self) -> Org:
         """``GET /org/`` — workspace summary (plan + invite quota).
 
         Useful before bulk invites: check ``invites_remaining``.

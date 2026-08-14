@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 from urllib.parse import parse_qs, urlparse
 
 from praxicraft._paths import path_segment
+from praxicraft.types import Page, ResultRow
 
 if TYPE_CHECKING:
     from praxicraft._client import Client
@@ -26,7 +27,7 @@ class ResultsResource:
         cursor: str | None = None,
         page_size: int | None = None,
         params: Mapping[str, Any] | None = None,
-    ) -> Any:
+    ) -> Page:
         """``GET /assessments/{slug}/results/`` — cohort results (cursor-paginated)."""
         query: dict[str, Any] = dict(params or {})
         if cursor is not None:
@@ -36,7 +37,7 @@ class ResultsResource:
         key = path_segment(assessment, label="assessment")
         return self._client.get(f"/assessments/{key}/results/", params=query)
 
-    def retrieve(self, invite_token: str) -> Any:
+    def retrieve(self, invite_token: str) -> ResultRow:
         """``GET /invites/{token}/result/`` — single candidate result."""
         token = path_segment(invite_token, label="invite_token")
         return self._client.get(f"/invites/{token}/result/")
@@ -47,7 +48,7 @@ class ResultsResource:
         *,
         page_size: int | None = None,
         params: Mapping[str, Any] | None = None,
-    ) -> Iterator[Any]:
+    ) -> Iterator[ResultRow]:
         """Yield each result row, following cursor / ``next`` pagination links."""
         cursor: str | None = None
         seen: set[str] = set()
