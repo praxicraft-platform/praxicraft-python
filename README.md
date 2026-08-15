@@ -8,7 +8,7 @@ Use it to invite candidates, check invite quota, manage webhooks, enroll hiring 
 pip install praxicraft
 ```
 
-**Requires Python 3.10+.** Full API reference: [docs.praxicraft.com](https://docs.praxicraft.com)
+**Requires Python 3.10+.** Full API reference: [docs.praxicraft.com/sdks/python]([https://docs.praxicraft.com](https://docs.praxicraft.com/sdks/python))
 
 ## Table of Contents
 
