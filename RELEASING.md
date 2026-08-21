@@ -44,3 +44,9 @@ CI tags and publishes automatically when that version has never been tagged.
    - Environment name: `pypi`
 3. Ensure the default branch is `main` and the `github-actions` bot can push tags (`contents: write` is set on the publish job).
 4. Merge a version bump to `main` to cut the first release.
+
+## GitHub Release
+
+The Publish workflow also creates a **GitHub Release** for tag `v{version}` (with generated notes and package assets where applicable).
+
+You can run **Actions → Publish → Run workflow** manually (`workflow_dispatch`) after bumping the version on `main`.
