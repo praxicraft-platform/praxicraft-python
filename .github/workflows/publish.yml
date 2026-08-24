@@ -1,7 +1,7 @@
 name: Publish
 
 # On important source changes to main: auto-bump patch version + CHANGELOG,
-# commit chore(release), tag, and publish. Skip with [skip release].
+# bump version in-runner, tag (no push to main — branch protection), publish. Skip with [skip release].
 on:
   workflow_dispatch:
   push:
@@ -99,8 +99,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pyproject.toml src/praxicraft/__init__.py CHANGELOG.md
           if ! git diff --cached --quiet; then
+            # Local commit only — do not push to main (rules require PRs).
+            # Pushing the annotated tag keeps this release commit reachable.
             git commit -m "chore(release): ${TAG}"
-            git push origin HEAD:main
           fi
           {
             echo "version=${VERSION}"
