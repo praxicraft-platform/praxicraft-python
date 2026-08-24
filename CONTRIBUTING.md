@@ -25,3 +25,7 @@ pytest -q
 1. Open a PR against `main`.
 2. Ensure `pytest -q` is green locally; CI runs on 3.10–3.12.
 3. Describe the user-facing change briefly in the PR body.
+
+## Code of Conduct
+
+This project follows our [Code of Conduct](./CODE_OF_CONDUCT.md). Report issues to support@praxicraft.com.
