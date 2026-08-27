@@ -45,54 +45,54 @@ class AssessmentsResource:
         """Activate an assessment (``status="active"``) so it can accept invites."""
         return self.update(assessment, status="active")
 
-    def list_cases(
+    def list_tasks(
         self,
         assessment: str,
         *,
         params: Mapping[str, Any] | None = None,
     ) -> Any:
-        """``GET /assessments/{slug}/cases/`` — tasks attached to the assessment."""
+        """``GET /assessments/{slug}/tasks/`` — tasks attached to the assessment."""
         key = path_segment(assessment, label="assessment")
-        return self._client.get(f"/assessments/{key}/cases/", params=params)
+        return self._client.get(f"/assessments/{key}/tasks/", params=params)
 
-    def attach_cases(
+    def attach_tasks(
         self,
         assessment: str,
-        cases: Sequence[Mapping[str, Any]] | None = None,
+        tasks: Sequence[Mapping[str, Any]] | None = None,
         **fields: Any,
     ) -> Any:
-        """``POST /assessments/{slug}/cases/attach/`` — attach platform/org cases.
+        """``POST /assessments/{slug}/tasks/attach/`` — attach platform/org tasks.
 
-        Pass either ``cases=[{case_id, source, ...}, ...]`` or a single
-        ``case_id=...`` / ``source=...`` via ``fields`` (Public API accepts both).
+        Pass either ``tasks=[{task_id, source, ...}, ...]`` or a single
+        ``task_id=...`` / ``source=...`` via ``fields`` (Public API accepts both).
         """
         body: dict[str, Any] = dict(fields)
-        if cases is not None:
-            body["cases"] = list(cases)
+        if tasks is not None:
+            body["tasks"] = list(tasks)
         if not body:
-            raise ValueError("attach_cases() requires cases=... or case_id=...")
+            raise ValueError("attach_tasks() requires tasks=... or task_id=...")
         key = path_segment(assessment, label="assessment")
-        return self._client.post(f"/assessments/{key}/cases/attach/", json=body)
+        return self._client.post(f"/assessments/{key}/tasks/attach/", json=body)
 
-    def replace_cases(
+    def replace_tasks(
         self,
         assessment: str,
-        cases: Sequence[Mapping[str, Any]],
+        tasks: Sequence[Mapping[str, Any]],
         **extra: Any,
     ) -> Any:
-        """``PUT /assessments/{slug}/cases/replace/`` — replace the full case lineup."""
-        body: dict[str, Any] = {"cases": list(cases), **extra}
+        """``PUT /assessments/{slug}/tasks/replace/`` — replace the full task lineup."""
+        body: dict[str, Any] = {"tasks": list(tasks), **extra}
         key = path_segment(assessment, label="assessment")
-        return self._client.put(f"/assessments/{key}/cases/replace/", json=body)
+        return self._client.put(f"/assessments/{key}/tasks/replace/", json=body)
 
-    def remove_case(self, assessment: str, *, assessment_case_id: str) -> Any:
-        """``DELETE /assessments/{slug}/cases/remove/`` — detach one case row."""
+    def remove_task(self, assessment: str, *, assessment_task_id: str) -> Any:
+        """``DELETE /assessments/{slug}/tasks/remove/`` — detach one task row."""
         key = path_segment(assessment, label="assessment")
         # Body IDs must stay raw (not URL-encoded); only path segments are encoded.
-        case_id = str(assessment_case_id).strip()
-        if not case_id:
-            raise ValueError("assessment_case_id must be a non-empty string")
+        task_id = str(assessment_task_id).strip()
+        if not task_id:
+            raise ValueError("assessment_task_id must be a non-empty string")
         return self._client.delete(
-            f"/assessments/{key}/cases/remove/",
-            json={"assessment_case_id": case_id},
+            f"/assessments/{key}/tasks/remove/",
+            json={"assessment_task_id": task_id},
         )

@@ -90,7 +90,7 @@ Responses are **flat JSON** (same shape as the Public API — no `{ "data": … 
 | Resource | Common methods |
 |----------|----------------|
 | `client.org` | `retrieve()`, `stats()` |
-| `client.assessments` | `list()`, `retrieve()`, `create()`, `update()`, `activate()`, `list_cases()`, `attach_cases()`, `replace_cases()`, `remove_case()` |
+| `client.assessments` | `list()`, `retrieve()`, `create()`, `update()`, `activate()`, `list_tasks()`, `attach_tasks()`, `replace_tasks()`, `remove_task()` |
 | `client.invites` | `create()`, `bulk_create()`, `list()`, `retrieve()`, `remind()`, `cancel()` |
 | `client.results` | `list()`, `retrieve()`, `iter_all()` |
 | `client.webhooks` | `list()`, `create()`, `retrieve()`, `update()`, `delete()`, `test()`, `deliveries()` |
@@ -124,9 +124,9 @@ client.invites.bulk_create(
 
 ```python
 assessment = client.assessments.create(title="Backend screen")
-client.assessments.attach_cases(
+client.assessments.attach_tasks(
     assessment["slug"],
-    cases=[{"case_id": "<platform-or-org-case-uuid>", "source": "platform"}],
+    tasks=[{"task_id": "<platform-or-org-task-uuid>", "source": "platform"}],
 )
 client.assessments.activate(assessment["slug"])
 ```

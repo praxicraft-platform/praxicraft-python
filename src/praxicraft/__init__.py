@@ -24,6 +24,8 @@ from praxicraft.types import (
 )
 from praxicraft.webhooks import verify_signature
 
+from praxicraft._version import __version__
+
 __all__ = [
     "Client",
     "PraxicraftError",
@@ -44,6 +46,5 @@ __all__ = [
     "Pipeline",
     "Enrollment",
     "Page",
+    "__version__",
 ]
-
-__version__ = "0.1.2"

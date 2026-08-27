@@ -62,39 +62,39 @@ def test_update_and_activate(httpx_mock) -> None:
     assert client.assessments.update("demo", passing_score=75)["passing_score"] == 75
 
 
-def test_attach_list_replace_remove_cases(httpx_mock) -> None:
+def test_attach_list_replace_remove_tasks(httpx_mock) -> None:
     client = Client(api_key="ct_live_test", base_url="https://assess.example.com")
     httpx_mock.add_response(
         method="POST",
-        url="https://assess.example.com/api/v1/public/assessments/demo/cases/attach/",
+        url="https://assess.example.com/api/v1/public/assessments/demo/tasks/attach/",
         json={"attached": 1},
-        match_json={"cases": [{"case_id": "case-1", "source": "platform"}]},
+        match_json={"tasks": [{"task_id": "task-1", "source": "platform"}]},
     )
     httpx_mock.add_response(
         method="GET",
-        url="https://assess.example.com/api/v1/public/assessments/demo/cases/",
+        url="https://assess.example.com/api/v1/public/assessments/demo/tasks/",
         json={"results": [{"id": "row-1"}]},
     )
     httpx_mock.add_response(
         method="PUT",
-        url="https://assess.example.com/api/v1/public/assessments/demo/cases/replace/",
+        url="https://assess.example.com/api/v1/public/assessments/demo/tasks/replace/",
         json={"replaced": True},
-        match_json={"cases": [{"case_id": "case-2", "source": "org"}]},
+        match_json={"tasks": [{"task_id": "task-2", "source": "org"}]},
     )
     httpx_mock.add_response(
         method="DELETE",
-        url="https://assess.example.com/api/v1/public/assessments/demo/cases/remove/",
+        url="https://assess.example.com/api/v1/public/assessments/demo/tasks/remove/",
         status_code=204,
-        match_json={"assessment_case_id": "row-1"},
+        match_json={"assessment_task_id": "row-1"},
     )
 
-    assert client.assessments.attach_cases(
+    assert client.assessments.attach_tasks(
         "demo",
-        cases=[{"case_id": "case-1", "source": "platform"}],
+        tasks=[{"task_id": "task-1", "source": "platform"}],
     )["attached"] == 1
-    assert client.assessments.list_cases("demo")["results"][0]["id"] == "row-1"
-    assert client.assessments.replace_cases(
+    assert client.assessments.list_tasks("demo")["results"][0]["id"] == "row-1"
+    assert client.assessments.replace_tasks(
         "demo",
-        [{"case_id": "case-2", "source": "org"}],
+        [{"task_id": "task-2", "source": "org"}],
     )["replaced"] is True
-    assert client.assessments.remove_case("demo", assessment_case_id="row-1") is None
+    assert client.assessments.remove_task("demo", assessment_task_id="row-1") is None

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0
+
+### Breaking
+
+- Rename assessment task methods from `list_cases` / `attach_cases` / `replace_cases` / `remove_case` to `list_tasks` / `attach_tasks` / `replace_tasks` / `remove_task`.
+- Wire paths use `/tasks/` instead of `/cases/`; JSON keys use `tasks`, `task_id`, and `assessment_task_id`.
+
 ## 0.1.2
 
 - ci: auto-bump releases with GitHub Release + package publish
