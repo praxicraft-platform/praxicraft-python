@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 import httpx
 
+from praxicraft._version import __version__
 from praxicraft._errors import (
     APIConnectionError,
     APIError,
@@ -29,7 +30,7 @@ from praxicraft.resources.webhooks import WebhooksResource
 DEFAULT_BASE_URL = "https://assess.praxicraft.com"
 DEFAULT_API_PREFIX = "/api/v1/public"
 DEFAULT_TIMEOUT = 30.0
-USER_AGENT = "praxicraft-python/0.1.0"
+USER_AGENT = f"praxicraft-python/{__version__}"
 
 
 class Client:
