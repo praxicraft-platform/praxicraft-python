@@ -1,15 +1,15 @@
 name: Publish
 
-# On important source changes to main: auto-bump patch version + CHANGELOG,
-# bump version in-runner, tag (no push to main — branch protection), publish. Skip with [skip release].
+# Release via tags only. Bump version in pyproject.toml / _version.py on main, tag, then push tag or workflow_dispatch.
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "pyproject.toml"
-      - ".github/workflows/publish.yml"
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. v1.0.0). Required for manual runs."
+        required: true
+        type: string
 
 concurrency:
   group: publish-pypi
@@ -20,18 +20,14 @@ permissions:
 
 jobs:
   test:
-    if: |
-      github.event_name == 'workflow_dispatch' || (
-        github.event.head_commit != null &&
-        !startsWith(github.event.head_commit.message, 'chore(release):') &&
-        !contains(github.event.head_commit.message, '[skip release]')
-      )
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -43,12 +39,6 @@ jobs:
 
   publish:
     needs: test
-    if: |
-      github.event_name == 'workflow_dispatch' || (
-        github.event.head_commit != null &&
-        !startsWith(github.event.head_commit.message, 'chore(release):') &&
-        !contains(github.event.head_commit.message, '[skip release]')
-      )
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -57,7 +47,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Resolve release tag
+        id: release
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9] ]]; then
+            echo "Tag must look like v1.0.0 (got: $TAG)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${TAG} (package version ${VERSION})"
+
+      - name: Verify package version matches tag
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.release.outputs.version }}"
+          PYPROJECT=$(grep -E '^version\s*=' pyproject.toml | sed -E 's/^version\s*=\s*"([^"]+)".*/\1/')
+          VERSION_PY=$(grep '__version__' src/praxicraft/_version.py | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "$PYPROJECT" != "$VERSION" ] || [ "$VERSION_PY" != "$VERSION" ]; then
+            echo "Version mismatch: tag v${VERSION}, pyproject=${PYPROJECT}, _version.py=${VERSION_PY}"
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -66,61 +85,6 @@ jobs:
 
       - name: Install build tools
         run: python -m pip install --upgrade pip build
-
-      - name: Auto-bump patch version and CHANGELOG
-        id: version
-        run: |
-          set -euo pipefail
-          git fetch --tags --force
-          LATEST="$(git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0')"
-          RAW="${LATEST#v}"
-          IFS=. read -r MAJOR MINOR PATCH <<<"$RAW"
-          MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
-          PATCH=$((PATCH + 1))
-          VERSION="${MAJOR}.${MINOR}.${PATCH}"
-          TAG="v${VERSION}"
-          NOTES="$(git log "${LATEST}..HEAD" --pretty=format:'- %s' --no-merges 2>/dev/null | sed '/^chore(release):/d' || true)"
-          if [ -z "$NOTES" ]; then NOTES="- Maintenance release."; fi
-          export VERSION NOTES
-          python - <<'PY'
-          from pathlib import Path
-          import os, re
-          v, notes = os.environ["VERSION"], os.environ["NOTES"]
-          pp = Path("pyproject.toml")
-          pp.write_text(re.sub(r'(?m)^version\s*=\s*"[^"]*"', f'version = "{v}"', pp.read_text()))
-          init = Path("src/praxicraft/__init__.py")
-          init.write_text(re.sub(r'__version__\s*=\s*["\'][^"\']+["\']', f'__version__ = "{v}"', init.read_text()))
-          cl = Path("CHANGELOG.md")
-          body = cl.read_text() if cl.exists() else "# Changelog\n\n"
-          prior = body[body.index("## "):] if "## " in body else ""
-          cl.write_text(f"# Changelog\n\n## {v}\n\n{notes}\n\n{prior}")
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml src/praxicraft/__init__.py CHANGELOG.md
-          if ! git diff --cached --quiet; then
-            # Local commit only — do not push to main (rules require PRs).
-            # Pushing the annotated tag keeps this release commit reachable.
-            git commit -m "chore(release): ${TAG}"
-          fi
-          {
-            echo "version=${VERSION}"
-            echo "tag=${TAG}"
-            echo "should_publish=true"
-          } >> "$GITHUB_OUTPUT"
-          echo "Releasing ${TAG}"
-
-      - name: Create and push release tag
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
-            echo "Tag already exists"
-            exit 0
-          fi
-          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Build distributions
         run: python -m build
@@ -131,8 +95,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.tag }}
           generate_release_notes: true
           files: |
             dist/*
